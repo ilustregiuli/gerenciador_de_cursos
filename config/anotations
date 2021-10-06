@@ -1,0 +1,6 @@
+- Comando para inserir usuário:
+vendor\bin\doctrine dbal:run-sql "INSERT INTO usuarios (email, senha) VALUES ('giuli@giuli.com.br', 'senha')";
+- Criptografar senhas
+php > echo password_hash('senha',PASSWORD_ARGON2I);
+- verificar usuários
+vendor\bin\doctrine dbal:run-sql "SELECT * FROM usuarios;" 
