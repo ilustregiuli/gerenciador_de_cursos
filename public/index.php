@@ -2,7 +2,12 @@
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use Alura\Cursos\Controller\IControladorRequisicao;
+
+use Nyholm\Psr7Server\ServerRequestCreator;
+use Nyholm\Psr7\Factory\Psr17Factory;
+use Psr\Http\Server\RequestHandlerInterface;
+use Psr\Container\ContainerInterface;
+
 
 // recebe o caminho solicitado no navegador
 $caminho = $_SERVER['PATH_INFO']; 
@@ -31,15 +36,36 @@ if(!isset($_SESSION['logado']) && $ehUmaRotaDeLogin === false){
     exit();
 }
 
+$psr17Factory = new Psr17Factory();
+$creator = new ServerRequestCreator(
+    $psr17Factory, // ServerRequestFactory
+    $psr17Factory, // UrlFactory
+    $psr17Factory, // UploadedFileFactory
+    $psr17Factory // StreamFactory
+);
 
+$request = $creator->fromGlobals();
 
 // se o caminho existe...
 // variavel "classeControladora" recebe o array que está em "rotas" acessado pela chave "caminho"
 // e retorna o nome de uma classe (referente ao caminho solicitado na URL)
 $classeControladora = $rotas[$caminho];
 
+/** @var ContainerInterface $container */
+$container = require __DIR__ . '/../config/dependencies.php';
+
 // o nome de uma classe em uma variavel pode ser usada para instanciar um objeto
-/** @var IControladorRequisicao $controlador */
+/** @var RequestHandlerInterface $controlador */
 $controlador  = new $classeControladora();
-$controlador->processaRequisicao(); // -> acesso oos métodos do objeto
+
+$resposta = $controlador->handle($request); // -> acesso oos métodos do objeto
+
+foreach ($resposta->getHeaders() as $name => $values) {
+    foreach ($values as $value) {
+        header(sprintf('%s: %s', $name, $value), false);
+    }
+}
+
+echo $resposta->getBody();
+
 ?>

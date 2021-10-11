@@ -3,15 +3,21 @@
 namespace Alura\Cursos\Controller;
 
 use Alura\Cursos\Entity\Curso;
-use Alura\Cursos\Infra\EntityManagerCreator;
-use Psr\Http\Server\RequestHandlerInterface;
+use Alura\Cursos\Helper\FlashMessageTrait;
+use Doctrine\ORM\EntityManagerInterface;
+use Nyholm\Psr7\Response;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+
+
 
 // Implementando as interfaces recomendadas pela PSR
 class Exclusao implements RequestHandlerInterface
 {      
     // esse controller terá um atributo "entityManager" que irá receber no construtor 
+
+    use FlashMessageTrait;
     // um objeto para setar esse atributo
     /**
      * @var EntityManagerInterface
@@ -30,16 +36,39 @@ class Exclusao implements RequestHandlerInterface
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
 
-        $queryString = $request->getQueryParams(); // onde é implementado???
+        $id = filter_var(
+            $request->getQueryParams()['id'],
+            FILTER_VALIDATE_INT
+        );
+
+        $resposta = new Response(302,['Location' => '/listar-cursos']);
+        if (is_null($id) || $id === false) {
+            $this->defineMensagem('danger', 'Curso inexistente');
+            return $resposta;
+        }
+
+       
+        $curso = $this->entityManager->getReference(
+            Curso::class,
+            $id
+        );
+        $this->entityManager->remove($curso);
+        $this->entityManager->flush();
+        $this->defineMensagem('success', 'Curso excluído com sucesso');
+
+        return $resposta;
+
+        /* ---- Código anterior (para comparação)
+
+         $queryString = $request->getQueryParams(); // onde é implementado???
+        // resposta: esse método é da interface ServerRequestInterface, que é implemntada quando a fábrica de 
+        // requests criada no "index", chama o método "fromGlobals" 
         $idEntidade = $queryString ['id'];
         $entidade = $this->entityManager
             ->getReference(Curso::class,$idEntidade);
         $this->entityManager->remove($entidade);
         $this->entityManager->flush();
 
-        return new Response(302,['Location' => '/listar-cursos']);
-
-        /* ---- Código anterior (para comparação)
 
         $id = filter_input(INPUT_GET, 
         'id', 
